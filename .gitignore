@@ -1,0 +1,4 @@
+node_modules
+qr/*
+package-lock.json
+*.csv
