@@ -1,61 +1,91 @@
-'use strcit';
+'use strcit'
 
-const QRReader = require('qrcode-reader');
-const fs = require('fs');
-const path = require('path');
-const jimp = require('jimp');
+const QRReader = require('qrcode-reader')
+const fs = require('fs')
+const path = require('path')
+const jimp = require('jimp')
 
 /**
  * CONFIG
  */
-const QR_FILE_DIR = './qr/'
-const OUTPUT_FILE_NAME = 'result.csv'
+const QR_FILE_DIR = './qr/' // QRコードが格納されるディレクトリ
+const OUTPUT_FILE_NAME = 'result.csv' // 出力されるファイル名
 
-
-async function getQRUrl(IMAGE_PATH) {
-  const img = await jimp.read(fs.readFileSync(IMAGE_PATH))
-  const qr = new QRReader()
-
-  const value = await new Promise((resolve, reject) => {
-    qr.callback = (err, v) => err != null ? reject(err) : resolve(v)
-    qr.decode(img.bitmap)
-  });
-
-  return value.result
-}
-
-async function outputFile(rowText) {
-  try {
-    fs.writeFileSync(OUTPUT_FILE_NAME, rowText+"\n", {flag: "a"});
-  }catch(e){
-    console.log(e);
+class QRCodeLister {
+  constructor (QR_FILE_DIR, OUTPUT_FILE_NAME) {
+    this.QR_FILE_DIR = QR_FILE_DIR;
+    this.OUTPUT_FILE_NAME = OUTPUT_FILE_NAME;
   }
-}
 
-//呼び出し
-async function showAllQRBody(dir) {
-  const filenames = fs.readdirSync(dir);
-  filenames.forEach((filename) => {
-    const fullPath = path.join(dir, filename);
-    const stats = fs.statSync(fullPath);
-    if (stats.isFile()) {
-      getQRUrl(fullPath).then(res => {
-        const t = `${fullPath},${res}`
-        outputFile(t);
-        console.log(fullPath, res)
-      })
-    } else if (stats.isDirectory()) {
-      showAllQRBody(fullPath)
+  /**
+   * 出力ファイルを初期化する関数
+   */
+  async initFile() {
+    try {
+      fs.writeFileSync(OUTPUT_FILE_NAME, "");
+    }catch(e){
+      console.log(e);
     }
-  })
+  }
+
+  /**
+   * QRコードに書かれた文字列を取得する関数
+   * @param {string} IMAGE_PATH 
+   */
+  async getQRData(IMAGE_PATH) {
+    const img = await jimp.read(fs.readFileSync(IMAGE_PATH))
+    const qr = new QRReader()
+
+    const value = await new Promise((resolve, reject) => {
+      qr.callback = (err, v) => err != null ? reject(err) : resolve(v)
+      qr.decode(img.bitmap)
+    });
+
+    return value.result
+  }
+
+  /**
+   * 引数のデータをコンストラクタで定義されたファイルに書き込む関数
+   * @param {string} rowText 
+   */
+  async outputFile(rowText) {
+    try {
+      fs.writeFileSync(this.OUTPUT_FILE_NAME, rowText+"\n", {flag: "a"});
+    }catch(e){
+      console.log(e);
+    }
+  }
+
+  /**
+   * 引数で指定されたディレクトリのファイル一覧を取得して、
+   * 各ファイルのQRコードを読み込んで出力処理を行う関数
+   * @param {string} dir 
+   */
+  async showAllQRBody(dir) {
+    const filenames = fs.readdirSync(dir);
+    filenames.forEach((filename) => {
+      const fullPath = path.join(dir, filename);
+      const stats = fs.statSync(fullPath);
+      if (stats.isFile()) {
+        this.getQRData(fullPath).then(res => {
+          const t = `${fullPath},${res}`
+          this.outputFile(t);
+          console.log(fullPath, res)
+        })
+      } else if (stats.isDirectory()) {
+        this.showAllQRBody(fullPath)
+      }
+    })
+  }
+
+  async output() {
+    // ファイルの初期化
+    this.initFile()
+    this.showAllQRBody(this.QR_FILE_DIR);
+  }
+
 }
 
-// ファイルの初期化
-try {
-  fs.writeFileSync(OUTPUT_FILE_NAME, "");
-}catch(e){
-  console.log(e);
-}
-
-// 出力
-showAllQRBody(QR_FILE_DIR);
+// 出力する
+qr = new QRCodeLister(QR_FILE_DIR, OUTPUT_FILE_NAME)
+qr.output()
