@@ -12,9 +12,9 @@ const QR_FILE_DIR = './qr/' // QRコードが格納されるディレクトリ
 const OUTPUT_FILE_NAME = 'result.csv' // 出力されるファイル名
 
 class QRCodeLister {
-  constructor (QR_FILE_DIR, OUTPUT_FILE_NAME) {
-    this.QR_FILE_DIR = QR_FILE_DIR;
-    this.OUTPUT_FILE_NAME = OUTPUT_FILE_NAME;
+  constructor (QR_FILE_DIR, OUTPUT_FILE_NAME, ENCODE) {
+    this.dir = QR_FILE_DIR
+    this.filename = OUTPUT_FILE_NAME
   }
 
   /**
@@ -50,7 +50,7 @@ class QRCodeLister {
    */
   async outputFile(rowText) {
     try {
-      fs.writeFileSync(this.OUTPUT_FILE_NAME, rowText+"\n", {flag: "a"});
+      fs.writeFileSync(this.filename, rowText+"\n", {flag: "a"});
     }catch(e){
       console.log(e);
     }
@@ -78,10 +78,13 @@ class QRCodeLister {
     })
   }
 
+  /**
+   * CSVを出力する
+   */
   async output() {
     // ファイルの初期化
     this.initFile()
-    this.showAllQRBody(this.QR_FILE_DIR);
+    this.showAllQRBody(this.dir);
   }
 
 }
